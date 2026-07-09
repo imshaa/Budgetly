@@ -1,0 +1,47 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
+
+@layer base {
+  body {
+    @apply bg-background text-gray-800 font-sans antialiased dark:bg-gray-900 dark:text-gray-100;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-gray-900 dark:text-white;
+  }
+}
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl shadow-soft p-6 border border-gray-100 dark:bg-gray-800 dark:border-gray-700;
+  }
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all duration-200 dark:bg-gray-900 dark:border-gray-700 dark:focus:bg-gray-800 dark:text-white;
+  }
+  .btn-primary {
+    @apply bg-accent hover:bg-accent-hover text-gray-900 font-medium py-3 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center dark:bg-accent dark:hover:bg-accent-hover dark:text-gray-900;
+  }
+  .btn-secondary {
+    @apply bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+}
+/* Custom scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}

@@ -1,0 +1,4 @@
+# Frontend environment variables
+# In development the Vite proxy handles /api/* → Django, so this can stay empty.
+# In production, set this to your deployed Django URL e.g. https://api.budgetly.com
+VITE_API_URL=
