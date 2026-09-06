@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
+import { BASE_URL, authFetch, authFetchMultipart } from '../services/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -42,51 +43,109 @@ interface MissingFields {
   [key: string]: string;
 }
 
+interface FieldDef {
+  key: string;
+  label: string;
+}
+
+interface InputWidgetProps {
+  title: string;
+  subtitle?: string;
+  fields: FieldDef[];
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  formValues: Record<string, string>;
+  prefillData: Record<string, string>;
+  setField: (key: string, value: string) => void;
+}
+
+function InputWidget({
+  title,
+  subtitle,
+  fields,
+  onSubmit,
+  isSubmitting,
+  formValues,
+  prefillData,
+  setField,
+}: InputWidgetProps) {
+  return (
+    <div className="card p-5 max-w-md w-full my-4 shadow-sm">
+      <h3 className="font-medium text-gray-900 mb-1">{title}</h3>
+      {subtitle && <p className="text-xs text-gray-500 mb-4">{subtitle}</p>}
+      <div className="space-y-3 mb-5 mt-3">
+        {fields.map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 w-28 flex-shrink-0">{label}</span>
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rs</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className="input-field pl-10 py-2 text-sm"
+                placeholder="0.00"
+                value={formValues[key] || ''}
+                onChange={(e) => setField(key, e.target.value)}
+              />
+              {prefillData[key] && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-500 font-medium">
+                  auto-filled
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={onSubmit}
+        disabled={isSubmitting}
+        className="btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+      >
+        {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : null}
+        Save & Continue
+      </button>
+    </div>
+  );
+}
+
 // ── API helpers ────────────────────────────────────────────────────────────
 
-const BASE = '/api/finance';
+const BASE = `${BASE_URL}/finance`;
 
 async function apiPatch(endpoint: string, data: Record<string, string | null>) {
-  const token = localStorage.getItem('access_token');
-  const res = await fetch(`${BASE}${endpoint}`, {
+  const res = await authFetch(`${BASE}${endpoint}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
 async function apiPost(endpoint: string, data: Record<string, unknown> | FormData) {
-  const token = localStorage.getItem('access_token');
   const isFormData = data instanceof FormData;
-  const res = await fetch(`${BASE}${endpoint}`, {
+  const res = await (isFormData
+    ? authFetchMultipart(`${BASE}${endpoint}`, {
+        method: 'POST',
+        body: data,
+      })
+    : authFetch(`${BASE}${endpoint}`, {
     method: 'POST',
-    headers: {
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      Authorization: `Bearer ${token}`,
-    },
-    body: isFormData ? data : JSON.stringify(data),
-  });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }));
   return res.json();
 }
 
 async function apiDelete(endpoint: string) {
-  const token = localStorage.getItem('access_token');
-  const res = await fetch(`${BASE}${endpoint}`, {
+  const res = await authFetch(`${BASE}${endpoint}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   });
   return res.ok;
 }
 
 async function apiGet(endpoint: string) {
-  const token = localStorage.getItem('access_token');
-  const res = await fetch(`${BASE}${endpoint}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await authFetch(`${BASE}${endpoint}`);
   return res.json();
 }
 
@@ -449,71 +508,6 @@ export function Onboarding() {
     </div>
   );
 
-  interface FieldDef {
-    key: string;
-    label: string;
-  }
-
-  const InputWidget = ({
-    title,
-    subtitle,
-    fields,
-    onSubmit,
-    endpoint,
-    fieldKeys,
-    userMsg,
-    nextStep,
-  }: {
-    title: string;
-    subtitle?: string;
-    fields: FieldDef[];
-    onSubmit?: () => void;
-    endpoint: string;
-    fieldKeys: string[];
-    userMsg: string;
-    nextStep: Step;
-  }) => {
-    const step = currentStep;
-    return (
-      <div className="card p-5 max-w-md w-full my-4 shadow-sm">
-        <h3 className="font-medium text-gray-900 mb-1">{title}</h3>
-        {subtitle && <p className="text-xs text-gray-500 mb-4">{subtitle}</p>}
-        <div className="space-y-3 mb-5 mt-3">
-          {fields.map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-3">
-              <span className="text-sm text-gray-600 w-28 flex-shrink-0">{label}</span>
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="input-field pl-8 py-2 text-sm"
-                  placeholder="0.00"
-                  value={formValues[key] || ''}
-                  onChange={(e) => setField(key, e.target.value)}
-                />
-                {prefillData[key] && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-500 font-medium">
-                    auto-filled
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => submitStep(step, endpoint, fieldKeys, userMsg, nextStep)}
-          disabled={isSubmitting}
-          className="btn-primary w-full py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : null}
-          Save & Continue
-        </button>
-      </div>
-    );
-  };
-
   const ExtraInputWidget = () => (
     <div className="card p-5 max-w-md w-full my-4 shadow-sm">
       <h3 className="font-medium text-gray-900 mb-1">Custom Categories</h3>
@@ -533,7 +527,7 @@ export function Onboarding() {
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{cat.name}</p>
                 {cat.monthly_amount && (
-                  <p className="text-xs text-gray-500">${cat.monthly_amount}/mo</p>
+                  <p className="text-xs text-gray-500">Rs {cat.monthly_amount}/mo</p>
                 )}
               </div>
               <button
@@ -574,7 +568,7 @@ export function Onboarding() {
                   Monthly Amount (optional)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Rs</span>
                   <input
                     type="number"
                     min="0"
@@ -626,6 +620,8 @@ export function Onboarding() {
   // ── Widget router ────────────────────────────────────────────────────────
 
   const renderWidget = (widgetType: Step | 'upload') => {
+    const inputState = { isSubmitting, formValues, prefillData, setField };
+
     switch (widgetType) {
       case 'upload':
         return <UploadWidget />;
@@ -633,22 +629,21 @@ export function Onboarding() {
       case 'income':
         return (
           <InputWidget
+            {...inputState}
             title="Monthly Income"
             subtitle="Enter your regular income sources."
             fields={[
               { key: 'monthly_salary', label: 'Salary' },
               { key: 'monthly_side_income', label: 'Side Income' },
             ]}
-            endpoint="/income/"
-            fieldKeys={['monthly_salary', 'monthly_side_income']}
-            userMsg="Saved income details"
-            nextStep="spending"
+            onSubmit={() => submitStep(currentStep, '/income/', ['monthly_salary', 'monthly_side_income'], 'Saved income details', 'spending')}
           />
         );
 
       case 'spending':
         return (
           <InputWidget
+            {...inputState}
             title="Monthly Spending"
             subtitle="Your average monthly spend per category."
             fields={[
@@ -658,64 +653,53 @@ export function Onboarding() {
               { key: 'spending_subscriptions', label: 'Subscriptions' },
               { key: 'spending_housing', label: 'Housing' },
             ]}
-            endpoint="/spending/"
-            fieldKeys={['spending_food_dining','spending_entertainment','spending_transport','spending_subscriptions','spending_housing']}
-            userMsg="Saved spending details"
-            nextStep="debts"
+            onSubmit={() => submitStep(currentStep, '/spending/', ['spending_food_dining','spending_entertainment','spending_transport','spending_subscriptions','spending_housing'], 'Saved spending details', 'debts')}
           />
         );
 
       case 'debts':
         return (
           <InputWidget
+            {...inputState}
             title="Debts & Loans"
             subtitle="Total outstanding balance across all debts."
             fields={[{ key: 'total_debts', label: 'Total Debts' }]}
-            endpoint="/debts/"
-            fieldKeys={['total_debts']}
-            userMsg="Saved debt details"
-            nextStep="savings"
+            onSubmit={() => submitStep(currentStep, '/debts/', ['total_debts'], 'Saved debt details', 'savings')}
           />
         );
 
       case 'savings':
         return (
           <InputWidget
+            {...inputState}
             title="Savings"
             fields={[
               { key: 'emergency_fund', label: 'Emergency Fund' },
               { key: 'total_savings', label: 'Total Savings' },
             ]}
-            endpoint="/savings/"
-            fieldKeys={['emergency_fund', 'total_savings']}
-            userMsg="Saved savings details"
-            nextStep="investments"
+            onSubmit={() => submitStep(currentStep, '/savings/', ['emergency_fund', 'total_savings'], 'Saved savings details', 'investments')}
           />
         );
 
       case 'investments':
         return (
           <InputWidget
+            {...inputState}
             title="Investments"
             subtitle="Stocks, ETFs, crypto, retirement accounts, etc."
             fields={[{ key: 'total_investments', label: 'Total Invested' }]}
-            endpoint="/investments/"
-            fieldKeys={['total_investments']}
-            userMsg="Saved investment details"
-            nextStep="balance"
+            onSubmit={() => submitStep(currentStep, '/investments/', ['total_investments'], 'Saved investment details', 'balance')}
           />
         );
 
       case 'balance':
         return (
           <InputWidget
+            {...inputState}
             title="Account Balance"
             subtitle="Your current bank account balance."
             fields={[{ key: 'current_account_balance', label: 'Balance' }]}
-            endpoint="/balance/"
-            fieldKeys={['current_account_balance']}
-            userMsg="Saved account balance"
-            nextStep="extra"
+            onSubmit={() => submitStep(currentStep, '/balance/', ['current_account_balance'], 'Saved account balance', 'extra')}
           />
         );
 

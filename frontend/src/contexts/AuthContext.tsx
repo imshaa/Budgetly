@@ -31,6 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   useEffect(() => {
+    const handleExpiredSession = () => {
+      localStorage.removeItem('user_email');
+      setUser(null);
+      setProfile(null);
+    };
+
+    window.addEventListener('auth:expired', handleExpiredSession);
+    return () => window.removeEventListener('auth:expired', handleExpiredSession);
+  }, []);
+
+  useEffect(() => {
     // Restore session from localStorage on mount
     const token = localStorage.getItem('access_token');
     const email = localStorage.getItem('user_email');

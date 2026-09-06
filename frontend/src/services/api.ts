@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // ── Media URL ──────────────────────────────────────────────────────────────────
 export const MEDIA_BASE_URL = BASE_URL.replace('/api', '');
@@ -20,6 +20,7 @@ function setTokens(access: string, refresh: string) {
 function clearTokens() {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  window.dispatchEvent(new Event('auth:expired'));
 }
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -39,10 +40,13 @@ async function refreshAccessToken(): Promise<string | null> {
 
   const data = await res.json();
   localStorage.setItem('access_token', data.access);
+  if (data.refresh) {
+    localStorage.setItem('refresh_token', data.refresh);
+  }
   return data.access;
 }
 
-async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const { access } = getTokens();
 
   const makeRequest = (token: string | null) =>
@@ -68,7 +72,7 @@ async function authFetch(url: string, options: RequestInit = {}): Promise<Respon
   return res;
 }
 
-async function authFetchMultipart(url: string, options: RequestInit = {}): Promise<Response> {
+export async function authFetchMultipart(url: string, options: RequestInit = {}): Promise<Response> {
   const { access } = getTokens();
 
   const makeRequest = (token: string | null) =>
