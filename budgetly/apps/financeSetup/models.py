@@ -10,6 +10,8 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 
+from django.utils import timezone
+
 
 class FinancialProfile(models.Model):
     """
@@ -201,3 +203,45 @@ class OnboardingSession(models.Model):
 
     def __str__(self):
         return f"OnboardingSession({self.user_id}, step={self.current_step})"
+
+
+
+#  Dashboard models Addition :
+
+
+class Transaction(models.Model):
+    """Individual dated transaction, parsed from an uploaded statement."""
+
+    profile = models.ForeignKey(
+        FinancialProfile, on_delete=models.CASCADE, related_name="transactions"
+    )
+    date = models.DateField()
+    description = models.CharField(max_length=255)
+    # Negative = money out (spend), positive = money in (income)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    category = models.CharField(max_length=40, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+        indexes = [models.Index(fields=["profile", "date"])]
+
+    def __str__(self):
+        return f"{self.date} | {self.description} | {self.amount}"
+
+
+class BalanceSnapshot(models.Model):
+    """One balance reading per day, so the dashboard can plot a real trend."""
+
+    profile = models.ForeignKey(
+        FinancialProfile, on_delete=models.CASCADE, related_name="balance_snapshots"
+    )
+    balance = models.DecimalField(max_digits=14, decimal_places=2)
+    recorded_at = models.DateField(default=timezone.now)
+
+    class Meta:
+        ordering = ["recorded_at"]
+        unique_together = ("profile", "recorded_at")
+
+    def __str__(self):
+        return f"{self.recorded_at}: {self.balance}"

@@ -4,6 +4,7 @@ apps/financeSetup/urls.py
 
 from django.urls import path
 from .views import (
+    DashboardView,
     UploadStatementView,
     FinancialProfileView,
     IncomeView,
@@ -41,4 +42,6 @@ urlpatterns = [
 
     # Finalise
     path("complete/", CompleteOnboardingView.as_view(), name="finance-complete"),
+    # Dashboard data
+    path("dashboard/", DashboardView.as_view(), name="finance-dashboard"),
 ]

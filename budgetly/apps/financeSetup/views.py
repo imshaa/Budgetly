@@ -19,13 +19,14 @@ Endpoints:
 """
 
 import logging
+
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 
-from .models import FinancialProfile, CustomCategory, OnboardingSession
+from .models import FinancialProfile, CustomCategory, OnboardingSession, BalanceSnapshot
 from .serializers import (
     FinancialProfileSerializer,
     IncomeSerializer,
@@ -37,8 +38,10 @@ from .serializers import (
     CustomCategorySerializer,
     OnboardingSessionSerializer,
 )
-from .services import parse_statement, apply_parsed_data, get_missing_fields, generate_rag_text
 
+from .services import parse_statement, apply_parsed_data, get_missing_fields, generate_rag_text, get_dashboard_data
+
+from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
@@ -308,3 +311,34 @@ class OnboardingSessionView(APIView):
                 "profile_status": profile.status,
             }
         )
+
+
+
+
+# ----------------- Dashboard Helpers -------------
+
+def _record_balance_snapshot(profile):
+    if profile.current_account_balance is not None:
+        BalanceSnapshot.objects.update_or_create(
+            profile=profile,
+            recorded_at=timezone.now().date(),
+            defaults={"balance": profile.current_account_balance},
+        )
+
+
+def _record_balance_snapshot(profile):
+    if profile.current_account_balance is not None:
+        BalanceSnapshot.objects.update_or_create(
+            profile=profile,
+            recorded_at=timezone.now().date(),
+            defaults={"balance": profile.current_account_balance},
+        )
+
+
+class DashboardView(APIView):
+    """GET /api/finance/dashboard/ — all real data the dashboard needs."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile = _get_or_create_profile(request.user)
+        return Response(get_dashboard_data(profile))
