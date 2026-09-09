@@ -182,3 +182,22 @@ export const profileAPI = {
     return res.json();
   },
 };
+
+
+// ── Dashboard API ─────────────────────────────────────────────────────────────
+
+export async function getDashboardData() {
+  const res = await authFetch(`${BASE_URL}/finance/dashboard/`);
+  if (!res.ok) throw new Error('Failed to load dashboard data');
+  return res.json();
+}
+
+export async function updateDashboardData(payload: Record<string, number>) {
+  const res = await authFetch(`${BASE_URL}/finance/dashboard/update/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to update dashboard');
+  return res.json();
+}
